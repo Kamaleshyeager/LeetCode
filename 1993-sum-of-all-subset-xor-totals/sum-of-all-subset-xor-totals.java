@@ -1,24 +1,11 @@
 class Solution {
-    int ans=0;
-    public int subsetXORSum(int[] nums) {
-        List<Integer> al=new ArrayList<>();
-        findAns(0,nums,al);
-        return ans;
+    public int xorSubsets(int index, int[] nums, int val){
+        if(index == nums.length) return val;
+        int include = xorSubsets(index+1,nums,val^nums[index]);
+        int exclude = xorSubsets(index+1,nums,val);
+        return include+exclude;
     }
-
-    public void findAns(int index,int[] nums,List<Integer> al){
-        if(index==nums.length){
-            int result = 0;
-            for (int num : al) {
-               result ^= num;
-            }
-            ans+=result;
-            return;
-        }
-        al.add(nums[index]);
-        findAns(index+1,nums,al);
-        al.remove(al.size()-1);
-        findAns(index+1,nums,al);
-        
+    public int subsetXORSum(int[] nums) {
+        return xorSubsets(0,nums,0);
     }
 }
