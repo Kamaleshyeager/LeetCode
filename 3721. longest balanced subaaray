@@ -1,0 +1,88 @@
+from typing import List
+
+class SegTree:
+    def __init__(self, n):
+        self.n = n
+        self.mn = [0] * (4 * n)
+        self.mx = [0] * (4 * n)
+        self.lazy = [0] * (4 * n)
+
+    def _apply(self, idx, val):
+        self.mn[idx] += val
+        self.mx[idx] += val
+        self.lazy[idx] += val
+
+    def _push(self, idx):
+        if self.lazy[idx] != 0:
+            self._apply(idx << 1, self.lazy[idx])
+            self._apply(idx << 1 | 1, self.lazy[idx])
+            self.lazy[idx] = 0
+
+    def _pull(self, idx):
+        self.mn[idx] = min(self.mn[idx << 1], self.mn[idx << 1 | 1])
+        self.mx[idx] = max(self.mx[idx << 1], self.mx[idx << 1 | 1])
+
+    def _add(self, idx, l, r, ql, qr, val):
+        if ql > r or qr < l:
+            return
+        if ql <= l and r <= qr:
+            self._apply(idx, val)
+            return
+        self._push(idx)
+        mid = (l + r) // 2
+        self._add(idx << 1, l, mid, ql, qr, val)
+        self._add(idx << 1 | 1, mid + 1, r, ql, qr, val)
+        self._pull(idx)
+
+    def add(self, l, r, val):
+        if l <= r:
+            self._add(1, 0, self.n - 1, l, r, val)
+
+    def _find_zero(self, idx, l, r, ql, qr):
+        if ql > r or qr < l or self.mn[idx] > 0 or self.mx[idx] < 0:
+            return -1
+        if l == r:
+            return l
+        self._push(idx)
+        mid = (l + r) // 2
+        res = self._find_zero(idx << 1 | 1, mid + 1, r, ql, qr)
+        if res != -1:
+            return res
+        return self._find_zero(idx << 1, l, mid, ql, qr)
+
+    def find_rightmost_zero(self, l, r):
+        return self._find_zero(1, 0, self.n - 1, l, r)
+
+
+class Solution:
+    def longestBalanced(self, nums: List[int]) -> int:
+        n = len(nums)
+
+        positions = {}
+        for i, v in enumerate(nums):
+            positions.setdefault(v, []).append(i)
+
+        st = SegTree(n)
+
+        # Initial contribution: first occurrence onward
+        for v, pos in positions.items():
+            sign = 1 if v % 2 else -1
+            st.add(pos[0], n - 1, sign)
+
+        ptr = {v: 0 for v in positions}
+        ans = 0
+
+        for l in range(n):
+            r = st.find_rightmost_zero(l, n - 1)
+            if r != -1:
+                ans = max(ans, r - l + 1)
+
+            v = nums[l]
+            sign = 1 if v % 2 else -1
+            idx = ptr[v]
+            ptr[v] += 1
+
+            next_pos = positions[v][ptr[v]] if ptr[v] < len(positions[v]) else n
+            st.add(l, next_pos - 1, -sign)
+
+        return ans
